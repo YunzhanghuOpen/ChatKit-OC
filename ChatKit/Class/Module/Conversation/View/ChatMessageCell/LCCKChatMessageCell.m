@@ -2,7 +2,7 @@
 //  LCCKChatMessageCell.m
 //  LCCKChatExample
 //
-//  v0.7.15 Created by ElonChan (微信向我报BUG:chenyilong1010) ( https://github.com/leancloud/ChatKit-OC ) on 15/11/13.
+//  v0.8.5 Created by ElonChan ( https://github.com/leancloud/ChatKit-OC ) on 15/11/13.
 //  Copyright © 2015年 https://LeanCloud.cn . All rights reserved.
 //
 
@@ -260,6 +260,15 @@ static CGFloat const LCCK_MSG_CELL_NICKNAME_FONT_SIZE = 12;
 
 #pragma mark - Private Methods
 
+- (BOOL)isAbleToTap {
+    BOOL isAbleToTap = NO;
+    //For Link handle
+    if (self.mediaType < 0 && ![self isKindOfClass:[LCCKChatTextMessageCell class]]) {
+        isAbleToTap = YES;
+    }
+    return isAbleToTap;
+}
+
 - (void)addGeneralView {
     [self.contentView addSubview:self.avatarImageView];
     [self.contentView addSubview:self.nickNameLabel];
@@ -277,8 +286,8 @@ static CGFloat const LCCK_MSG_CELL_NICKNAME_FONT_SIZE = 12;
     self.messageSendStateView.hidden = YES;
     self.messageReadStateImageView.hidden = YES;
     
-    //For Link handle
-    if (![self isKindOfClass:[LCCKChatTextMessageCell class]]) {
+
+    if (self.isAbleToTap) {
         UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)];
         [self.contentView addGestureRecognizer:tap];
     }
@@ -539,5 +548,22 @@ static CGFloat const LCCK_MSG_CELL_NICKNAME_FONT_SIZE = 12;
     _conversationViewSenderNameTextColor = [[LCCKSettingService sharedInstance] defaultThemeColorForKey:@"ConversationView-SenderName-TextColor"];
     return _conversationViewSenderNameTextColor;
 }
+
+- (UIColor *)conversationViewMessageRightTextColor {
+    if (_conversationViewMessageRightTextColor) {
+        return _conversationViewMessageRightTextColor;
+    }
+    _conversationViewMessageRightTextColor = [[LCCKSettingService sharedInstance] defaultThemeColorForKey:@"ConversationView-Message-Right-TextColor"];
+    return _conversationViewMessageRightTextColor;
+}
+
+- (UIColor *)conversationViewMessageLeftTextColor {
+    if (_conversationViewMessageLeftTextColor) {
+        return _conversationViewMessageLeftTextColor;
+    }
+    _conversationViewMessageLeftTextColor = [[LCCKSettingService sharedInstance] defaultThemeColorForKey:@"ConversationView-Message-Left-TextColor"];
+    return _conversationViewMessageLeftTextColor;
+}
+
 @end
 

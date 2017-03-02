@@ -2,7 +2,7 @@
 //  LCCKUserSystemService.m
 //  ChatKit-iOS
 //
-//  v0.7.15 Created by ElonChan (微信向我报BUG:chenyilong1010) on 16/2/22.
+//  v0.8.5 Created by ElonChan on 16/2/22.
 //  Copyright © 2016年 LeanCloud. All rights reserved.
 //
 
@@ -28,7 +28,7 @@ NSString *const LCCKUserSystemServiceErrorDomain = @"LCCKUserSystemServiceErrorD
 
 - (NSArray<id<LCCKUserDelegate>> *)getProfilesForUserIds:(NSArray<NSString *> *)userIds error:(NSError * __autoreleasing *)theError {
     __block NSArray<id<LCCKUserDelegate>> *blockUsers = [NSArray array];
-    if (!_fetchProfilesBlock) {
+    if (!_fetchProfilesBlock && [LCCKSessionService sharedInstance].connect) {
         // This enforces implementing `-setFetchProfilesBlock:`.
         NSString *reason = [NSString stringWithFormat:@"You must implement `-setFetchProfilesBlock:` to allow ChatKit to get user information by user clientId."];
         @throw [NSException exceptionWithName:NSGenericException
@@ -189,10 +189,10 @@ NSString *const LCCKUserSystemServiceErrorDomain = @"LCCKUserSystemServiceErrorD
         userName_ = user.name;
         avatarURL_ = user.avatarURL;
         if (userName_ || avatarURL_) {
-            if (*name == nil) {
+            if (name) {
                 *name = userName_;
             }
-            if (*avatarURL == nil) {
+            if (avatarURL) {
                 *avatarURL = avatarURL_;
             }
             return;
@@ -307,7 +307,21 @@ NSString *const LCCKUserSystemServiceErrorDomain = @"LCCKUserSystemServiceErrorD
 - (void)cacheUsers:(NSArray<id<LCCKUserDelegate>> *)users {
     if (users.count > 0) {
         for (id<LCCKUserDelegate> user in users) {
-            [self setUser:user forClientId:user.clientId];
+            @try {
+                [self setUser:user forClientId:user.clientId];
+            } @catch (NSException *exception) {
+                NSString *formatString = @"\n\n\
+                ------ BEGIN NSException Log ---------------\n \
+                class name: %@                              \n \
+                ------line: %@                              \n \
+                ----reason: %@                              \n \
+                ------ END -------------------------------- \n\n";
+                NSString *errorReasonText = [NSString stringWithFormat:formatString,
+                                             @(__PRETTY_FUNCTION__),
+                                             @(__LINE__),
+                                             @"User's clientId can not be nil, please make sure when you set `setFetchProfilesBlock:`"];
+                LCCKLog(@"%@", errorReasonText);
+            }
         }
     }
 }

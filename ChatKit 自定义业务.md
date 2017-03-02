@@ -31,7 +31,15 @@
 
 这是上层（APP）提供用户信息的 Block，由于 ChatKit 并不关心业务逻辑信息，比如用户昵称，用户头像等。用户可以通过 ChatKit 单例向 ChatKit 注入一个用户信息内容提供 Block，通过这个用户信息提供 Block，ChatKit 才能够正确的进行业务逻辑数据的绘制。
 
+示意图如下：
+
+![](http://ww2.sinaimg.cn/large/801b780ajw1f8ah885yn0j20e70bw754.jpg)
+
 用法如下：
+
+首先要必须自己新建一个表示 User 的 Model 并遵循 LCCKUserDelegate 协议，Demo 中对应的是 `LCCKUser`。
+
+然后实现 `-setFetchProfilesBlock:`：
 
  ```Objective-C
  
@@ -80,14 +88,30 @@
 
  ```
 
+注意：这个方法 `[[LCChatKit sharedInstance] setFetchProfilesBlock:^(NSArray<NSString *> *userIds, LCCKFetchProfilesCompletionHandler completionHandler) {
+... }` ，其中参数 `userIds` 指的是 `ClientId` 的集合。
+
+
+另外，
+
+ ```Objective-C
+[LCCKUser userWithUserId:user[LCCKProfileKeyPeerId]
+          name:user[LCCKProfileKeyName]
+          avatarURL:avatarURL
+          clientId:clientId];
+ ```
+
+这个方法里有两个ID，其中 `clientId` 是 `ChatKit` 里的 `id`，`userId` 是 APP 里用户系统里的 `id`。
+
+你可以这样理解 `clientId` 与 `userId` 的作用：
+
+ > `clientId` 是用来建立对话的，`userid` 是获取对应用户头像和名字的。这两个ID可以一样，也可以不一样。
+
  对这个方法有疑惑，可以到这个 [issue](https://github.com/leancloud/ChatKit-OC/issues/17) 里讨论。
  
- 
-
 注意: **设置头像和昵称的这种方式是被动的，即 ChatKit 需要显示某个Person的头像和昵称时，才会回调这个 block 来获取。而不是您主动地将哪个用户的 Profile 设置到 ChatKit 中。请务必理解这一点。**
 
 ###  ClientId 与 UserId
-
 
 这里最重要的一个概念是 ClientId ，具体含义的请参考  [《实时通信服务总览-核心概念》](https://leancloud.cn/docs/realtime_v2.html#核心概念) 。
 
@@ -470,13 +494,39 @@ UI自定义，需要实现 `LCCKInputViewPluginDelegate` 方法：
 
 ## 国际化与本地化
 
- ChatKit 目前已在核心流程（聊天、对话列表话及相关页面）中支持国际化，开发者可以通过非常少的工作量来支持本地化，只需要自定义 Other.bundle 为 CustomizedChatKitOther.bundle，并修改或增加其中的本地化文件即可。
+ ChatKit 目前已在核心流程（聊天、对话列表话及相关页面）中支持国际化，开发者可以通过非常少的工作量来支持本地化，只需要自定义 Other.bundle 为 CustomizedChatKit.Other.bundle，并修改或增加其中的本地化文件即可。
 
 这个文件在每次 ChatKit 版本发布时是增量更新的，新增的内容置于文件的末尾并有时间注释，保证开发者可以迅速定位新增键值对。
 
 ## 其他事件及属性
 
 ### 监听并筛选或处理消息
+
+可以通过接口 `-[LCChatKit setSendMessageHookBlock:]` 来实现hook掉发送消息的行为，可实现黑名单，敏感词本地过滤等业务，具体用法如何：
+
+ ```Objective-C
+ //见LCChatKitExample+Setting.m
+- (void)lcck_setupSendMessageHook {
+    [[LCChatKit sharedInstance] setSendMessageHookBlock:^(LCCKConversationViewController *conversationController, __kindof AVIMTypedMessage *message, LCCKSendMessageHookCompletionHandler completionHandler) {
+        if ([message.clientId isEqualToString:@"Jerry"]) {
+            NSInteger code = 0;
+            NSString *errorReasonText = @"不允许Jerry发送消息";
+            NSDictionary *errorInfo = @{
+                                        @"code":@(code),
+                                        NSLocalizedDescriptionKey : errorReasonText,
+                                        };
+            NSError *error = [NSError errorWithDomain:NSStringFromClass([self class])
+                                                 code:code
+                                             userInfo:errorInfo];
+            
+            completionHandler(NO, error);
+            [conversationController sendLocalFeedbackTextMessge:errorReasonText];
+        } else {
+            completionHandler(YES, nil);
+        }
+    }];
+}
+ ```
 
 可以通过接口 `-[LCChatKit setFilterMessagesBlock:]` 实现拦截新消息，包括实时接收的消息，和拉取历史记录消息。
 

@@ -2,13 +2,18 @@
 //  LCCKMessageSendStateView.m
 //  LCCKChatBarExample
 //
-//  v0.7.15 Created by ElonChan (wechat:chenyilong1010) ( https://github.com/leancloud/ChatKit-OC ) on 15/11/23.
+//  v0.8.5 Created by ElonChan  ( https://github.com/leancloud/ChatKit-OC ) on 15/11/23.
 //  Copyright © 2015年 https://LeanCloud.cn . All rights reserved.
 //
 
 #import "LCCKMessageSendStateView.h"
 #import "UIImage+LCCKExtension.h"
-#import "LCCKDeallocBlockExecutor.h"
+
+#if __has_include(<CYLDeallocBlockExecutor/CYLDeallocBlockExecutor.h>)
+#import <CYLDeallocBlockExecutor/CYLDeallocBlockExecutor.h>
+#else
+#import "CYLDeallocBlockExecutor.h"
+#endif
 
 static void * const LCCKSendImageViewShouldShowIndicatorViewContext = (void*)&LCCKSendImageViewShouldShowIndicatorViewContext;
 
@@ -28,8 +33,8 @@ static void * const LCCKSendImageViewShouldShowIndicatorViewContext = (void*)&LC
         [self addSubview:self.indicatorView = indicatorView];
         // KVO注册监听
         [self addObserver:self forKeyPath:@"showIndicatorView" options:NSKeyValueObservingOptionNew context:LCCKSendImageViewShouldShowIndicatorViewContext];
-        __unsafe_unretained typeof(self) weakSelf = self;
-        [self lcck_executeAtDealloc:^{
+        __unsafe_unretained __typeof(self) weakSelf = self;
+        [self cyl_executeAtDealloc:^{
             [weakSelf removeObserver:weakSelf forKeyPath:@"showIndicatorView"];
         }];
         [self addTarget:self action:@selector(failImageViewTap:) forControlEvents:UIControlEventTouchUpInside];

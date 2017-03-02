@@ -2,7 +2,7 @@
 //  LCCKConversationListCell.m
 //  LeanCloudChatKit-iOS
 //
-//  v0.7.15 Created by ElonChan (微信向我报BUG:chenyilong1010) on 16/3/22.
+//  v0.8.5 Created by ElonChan on 16/3/22.
 //  Copyright © 2016年 LeanCloud. All rights reserved.
 //
 
@@ -70,12 +70,12 @@ CGFloat const LCCKConversationListCellDefaultHeight = 61; //LCCKImageSize + LCCK
     self.selectedBackgroundView = selectionColor;
     LCCKNameLabelHeight = LCCKImageSize * LCCKNameLabelHeightProportion;
     LCCKMessageLabelHeight = LCCKImageSize - LCCKNameLabelHeight;
-    [self addSubview:self.avatarImageView];
-    [self addSubview:self.timestampLabel];
-    [self.contentView addSubview:self.litteBadgeView];
+    [self.contentView addSubview:self.avatarImageView];
+    [self.contentView addSubview:self.timestampLabel];
     [self.contentView addSubview:self.nameLabel];
     [self.contentView addSubview:self.messageTextLabel];
     [self.contentView addSubview:self.remindMuteImageView];
+    [self.contentView addSubview:self.litteBadgeView];
 }
 
 - (UIImageView *)avatarImageView {
@@ -94,7 +94,7 @@ CGFloat const LCCKConversationListCellDefaultHeight = 61; //LCCKImageSize + LCCK
 - (UIView *)litteBadgeView {
     if (_litteBadgeView == nil) {
         UIView *litteBadgeView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, LCCKLittleBadgeSize, LCCKLittleBadgeSize)];
-//        litteBadgeView.layer.masksToBounds = YES;
+        litteBadgeView.backgroundColor = [UIColor redColor];
         litteBadgeView.layer.cornerRadius = LCCKLittleBadgeSize / 2;
         litteBadgeView.center = CGPointMake(CGRectGetMaxX(_avatarImageView.frame), CGRectGetMinY(_avatarImageView.frame));
         litteBadgeView.hidden = YES;
@@ -183,7 +183,8 @@ CGFloat const LCCKConversationListCellDefaultHeight = 61; //LCCKImageSize + LCCK
 - (void)prepareForReuse {
     [super prepareForReuse];
     self.badgeView.badgeText = nil;
-    self.badgeView = nil;
+// 长列表下会引起badgeView频繁创建和销毁，导致卡顿
+//    self.badgeView = nil;
     self.litteBadgeView.hidden = YES;
     self.messageTextLabel.text = nil;
     self.timestampLabel.text = nil;

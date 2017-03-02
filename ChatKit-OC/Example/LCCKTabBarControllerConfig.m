@@ -2,7 +2,7 @@
 //  LCChatKitExample.m
 //  LeanCloudChatKit-iOS
 //
-//  v0.7.15 Created by ElonChan (微信向我报BUG:chenyilong1010) on 16/2/24.
+//  v0.8.5 Created by ElonChan on 16/2/24.
 //  Copyright © 2016年 LeanCloud. All rights reserved.
 //
 
@@ -54,13 +54,13 @@
     LCCKConversationListViewController *firstViewController = [[LCCKConversationListViewController alloc] init];
     UINavigationController *firstNavigationController = [[LCCKBaseNavigationController alloc]
                                                          initWithRootViewController:firstViewController];
-    [firstViewController configureBarButtonItemStyle:LCCKBarButtonItemStyleAdd action:^(UIBarButtonItem *sender, UIEvent *event) {
+    [firstViewController configureBarButtonItemStyle:LCCKBarButtonItemStyleAdd action:^(__kindof LCCKBaseViewController *viewController, UIBarButtonItem *sender, UIEvent *event) {
         [self showPopOverMenu:sender event:event];
     }];
     self.firstViewController = firstViewController;
     NSArray *users = [[LCChatKit sharedInstance] getCachedProfilesIfExists:self.allPersonIds shouldSameCount:YES error:nil];
     NSString *currentClientID = [[LCChatKit sharedInstance] clientId];
-    LCCKContactListViewController *secondViewController = [[LCCKContactListViewController alloc] initWithContacts:[NSSet setWithArray:users] userIds:[NSSet setWithArray:self.allPersonIds] excludedUserIds:[NSSet setWithArray:@[currentClientID]] mode:LCCKContactListModeNormal];
+    LCCKContactListViewController *secondViewController = [[LCCKContactListViewController alloc] initWithContacts:[NSSet setWithArray:users]  userIds:[NSSet setWithArray:self.allPersonIds] excludedUserIds:[NSSet setWithArray:@[currentClientID]] mode:LCCKContactListModeNormal];
     [secondViewController setSelectedContactCallback:^(UIViewController *viewController, NSString *peerId) {
         [LCChatKitExample exampleOpenConversationViewControllerWithPeerId:peerId fromNavigationController:self.tabBarController.navigationController];
     }];

@@ -2,7 +2,7 @@
 //  LCCKServiceDefinition.h
 //  LeanCloudChatKit-iOS
 //
-//  v0.7.15 Created by ElonChan (微信向我报BUG:chenyilong1010) on 16/2/22.
+//  v0.8.5 Created by ElonChan on 16/2/22.
 //  Copyright © 2016年 LeanCloud. All rights reserved.
 //  All the Typedefine for all kinds of services.
 
@@ -17,7 +17,6 @@
 @class LCCKConversationViewController;
 @class LCCKConversationListViewController;
 @class LCCKMessage;
-@import CoreLocation;
 
 #pragma mark - LCCKSessionService
 ///=============================================================================
@@ -37,7 +36,7 @@ typedef void (^LCCKForceReconnectSessionBlock)(NSError *error, BOOL granted, __k
 @property (nonatomic, copy, readonly) NSString *clientId;
 @property (nonatomic, strong, readonly) AVIMClient *client;
 @property (nonatomic, assign) BOOL disableSingleSignOn;
-@property (nonatomic, copy, readonly) LCCKForceReconnectSessionBlock forceReconnectSessionBlock;
+@property (nonatomic, copy) LCCKForceReconnectSessionBlock forceReconnectSessionBlock;
 
 /*!
  * @param clientId You can use the user id in your user system as clientId, ChatKit will get the current user's information by both this id and the method `-[LCCKChatService getProfilesForUserIds:callback:]`.
@@ -296,7 +295,7 @@ typedef void(^LCCKHUDActionBlock)(__kindof UIViewController *viewController, UIV
 
 typedef CGFloat (^LCCKAvatarImageViewCornerRadiusBlock)(CGSize avatarImageViewSize);
 
-@property (nonatomic, assign) LCCKAvatarImageViewCornerRadiusBlock avatarImageViewCornerRadiusBlock;
+@property (nonatomic, copy) LCCKAvatarImageViewCornerRadiusBlock avatarImageViewCornerRadiusBlock;
 
 /*!
  *  设置对话列表和聊天界面头像ImageView的圆角弧度
@@ -369,7 +368,7 @@ typedef void (^LCCKConversationInvalidedHandler) (NSString *conversationId, LCCK
  */
 - (void)setConversationInvalidedHandler:(LCCKConversationInvalidedHandler)conversationInvalidedHandler;
 
-typedef void (^LCCKFilterMessagesCompletionHandler)(NSArray *filterMessages, NSError *error);
+typedef void (^LCCKFilterMessagesCompletionHandler)(NSArray *filteredMessages, NSError *error);
 typedef void (^LCCKFilterMessagesBlock)(AVIMConversation *conversation, NSArray<AVIMTypedMessage *> *messages, LCCKFilterMessagesCompletionHandler completionHandler);
 
 /*!
@@ -379,6 +378,21 @@ typedef void (^LCCKFilterMessagesBlock)(AVIMConversation *conversation, NSArray<
 - (void)setFilterMessagesBlock:(LCCKFilterMessagesBlock)filterMessagesBlock;
 
 @property (nonatomic, copy) LCCKFilterMessagesBlock filterMessagesBlock;
+
+/*!
+ * @param granted 该消息允许被发送
+ * @param error 消息为何不允许被发送
+ */
+typedef void (^LCCKSendMessageHookCompletionHandler)(BOOL granted, NSError *error);
+typedef void (^LCCKSendMessageHookBlock)(LCCKConversationViewController *conversationController, AVIMTypedMessage __kindof *message, LCCKSendMessageHookCompletionHandler completionHandler);
+
+/*!
+ * 用于HOOK掉发送消息的行为，可以实现比如：禁止黑名单用户发消息、禁止发送包含敏感词掉消息
+ * @attention 同步方法异步方法皆可
+ */
+- (void)setSendMessageHookBlock:(LCCKSendMessageHookBlock)sendMessageHookBlock;
+
+@property (nonatomic, copy) LCCKSendMessageHookBlock sendMessageHookBlock;
 
 //TODO:未实现
 typedef void (^LCCKLoadLatestMessagesHandler)(LCCKConversationViewController *conversationController, BOOL succeeded, NSError *error);

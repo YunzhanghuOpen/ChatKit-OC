@@ -2,7 +2,7 @@
 //  LCChatKitExample.m
 //  LeanCloudChatKit-iOS
 //
-//  v0.7.15 Created by ElonChan (微信向我报BUG:chenyilong1010) on 16/2/24.
+//  v0.8.5 Created by ElonChan on 16/2/24.
 //  Copyright © 2016年 LeanCloud. All rights reserved.
 //
 
@@ -20,6 +20,8 @@
 #import "LCChatKitExample+Setting.h"
 //#import "MWPhotoBrowser.h"
 #import "NSObject+LCCKHUD.h"
+#import "LCCKGroupConversationDetailViewController.h"
+#import "LCCKSingleConversationDetailViewController.h"
 
 
 #warning TODO: CHANGE TO YOUR AppId and AppKey
@@ -32,6 +34,8 @@ static NSString *const LCCKAPPKEY = @"057x24cfdzhffnl3dzk14jh9xo2rq6w1hy1fdzt5tv
     [self lcck_setupAppInfo];
     //设置用户体系
     [self lcck_setFetchProfiles];
+    //设置签名机制
+    //[self lcck_setGenerateSignature];
     //设置聊天列表
     [self lcck_setupConversationsList];
     //设置聊天
@@ -67,6 +71,8 @@ static NSString *const LCCKAPPKEY = @"057x24cfdzhffnl3dzk14jh9xo2rq6w1hy1fdzt5tv
     //[self lcck_setupAvatarImageCornerRadius];
     //筛选消息
     //[self lcck_setupFilterMessage];
+    //发送消息HOOK
+    //[self lcck_setupSendMessageHook];
     [self lcck_setupNotification];
     [self lcck_setupPreviewLocationMessage];
 }
@@ -135,13 +141,56 @@ static NSString *const LCCKAPPKEY = @"057x24cfdzhffnl3dzk14jh9xo2rq6w1hy1fdzt5tv
                  [users addObject:user_];
              }
          }];
-         // 模拟网络延时，3秒
-         //         sleep(3);
-         
+//          模拟网络延时，3秒
+                  sleep(3);
+        
 #warning 重要：completionHandler 这个 Bock 必须执行，需要在你**获取到用户信息结束**后，将信息传给该Block！
          !completionHandler ?: completionHandler([users copy], nil);
      }];
 }
+
+#pragma mark - 签名机制设置
+
+/*!
+ * 参考 https://leancloud.cn/docs/realtime_v2.html#权限和认证
+ * 需要使用同步请求
+ */
+//- (void)lcck_setGenerateSignature {
+//    [[LCChatKit sharedInstance] setGenerateSignatureBlock:^(NSString *clientId, NSString     *conversationId, NSString *action, NSArray *clientIds, LCCKGenerateSignatureCompletionHandler completionHandler) {
+//        NSMutableDictionary *paramsM = [NSMutableDictionary   dictionaryWithDictionary:@{@"token": [AccountManager sharedAccountManager].bestoneAccount.authentication_token}];
+//        if (clientIds.count) {
+//            [paramsM addEntriesFromDictionary:@{@"member_ids": clientIds}];
+//        }
+//        if (conversationId.length) {
+//            [paramsM addEntriesFromDictionary:@{@"conversation_id": conversationId}];
+//        }
+//        if (action.length) {
+//            [paramsM addEntriesFromDictionary:@{@"conv_action": action}];
+//        }
+//        
+//        dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+//        
+//        __block AVIMSignature *signature_ = nil;
+//        [HTTPSolution responseObjectWithMethod:@"GET" URLString:kSignatureURLStr parameters:[paramsM copy] wantData:NO success:^(NSURLResponse *response, id responseObject) {
+//            signature_ = [[AVIMSignature alloc] init];
+//            signature_.signature = responseObject[@"signature"];
+//            signature_.timestamp = [responseObject[@"timestamp"] longLongValue];
+//            signature_.nonce = responseObject[@"nonce"];
+//            !completionHandler ?: completionHandler(signature_, nil);
+//            LCCKLog(@"签名请求成功。。。。");
+//            dispatch_semaphore_signal(semaphore);
+//        } failure:^(NSError *error) {
+//            
+//            signature_ = [[AVIMSignature alloc] init];
+//            signature_.error = error;
+//            NSLog(@"error: %@", error.localizedDescription);
+//            !completionHandler ?: completionHandler(signature_, error);
+//            dispatch_semaphore_signal(semaphore);
+//        }];
+//        dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+//        LCCKLog(@"我在等待信号量增加！。。。。。");
+//    }];
+//}
 
 #pragma mark - 最近联系人列表的设置
 
@@ -190,27 +239,28 @@ static NSString *const LCCKAPPKEY = @"057x24cfdzhffnl3dzk14jh9xo2rq6w1hy1fdzt5tv
         //判断会话的成员是否超过两个(即是否为群聊)
         if (conversation.members.count > 2) { //设置点击rightButton为群聊Style,和对应事件
             [aConversationController configureBarButtonItemStyle:LCCKBarButtonItemStyleGroupProfile
-                                                          action:^(UIBarButtonItem *sender, UIEvent *event) {
-                                                              NSString *title = @"打开群聊详情";
-                                                              NSString *subTitle = [NSString stringWithFormat:@"群聊id：%@", conversation.conversationId];
-                                                              [LCCKUtil showNotificationWithTitle:title
-                                                                                         subtitle:subTitle
-                                                                                             type:LCCKMessageNotificationTypeMessage];
+                                                          action:^(__kindof LCCKBaseViewController *viewController, UIBarButtonItem *sender, UIEvent *event) {
+                                                              LCCKGroupConversationDetailViewController *groupConversationDetailViewController = [LCCKGroupConversationDetailViewController new];
+                                                              groupConversationDetailViewController.conversation = conversation;
+                                                              [viewController.navigationController pushViewController:groupConversationDetailViewController animated:YES];
                                                           }];
         } else if (conversation.members.count == 2) { //设置点击rightButton为单聊的Style,和对应事件
             [aConversationController
              configureBarButtonItemStyle:LCCKBarButtonItemStyleSingleProfile
-             action:^(UIBarButtonItem *sender, UIEvent *event) {
-                 NSString *title = @"打开用户详情";
+             action:^(__kindof LCCKBaseViewController *viewController, UIBarButtonItem *sender, UIEvent *event) {
+                 
+             
+//                 NSString *title = @"打开用户详情";
                  NSArray *members = conversation.members;
                  NSPredicate *predicate = [NSPredicate predicateWithFormat:@"NOT (SELF IN %@)", @[
                                                                                                   [LCChatKit sharedInstance].clientId
                                                                                                   ]];
                  NSString *peerId = [members filteredArrayUsingPredicate:predicate][0];
-                 NSString *subTitle = [NSString stringWithFormat:@"用户id：%@", peerId];
-                 [LCCKUtil showNotificationWithTitle:title
-                                            subtitle:subTitle
-                                                type:LCCKMessageNotificationTypeMessage];
+                 [[LCChatKit sharedInstance] getProfileInBackgroundForUserId:peerId callback:^(id<LCCKUserDelegate> user, NSError *error) {
+                     LCCKSingleConversationDetailViewController *singleConversationDetailViewController = [LCCKSingleConversationDetailViewController new];
+                     singleConversationDetailViewController.conversation = conversation;
+                     [viewController.navigationController pushViewController:singleConversationDetailViewController animated:YES];
+                 }];
              }];
         }
         //系统对话，或暂态聊天室，成员为0，单独处理。参考：系统对话文档
@@ -242,9 +292,10 @@ static NSString *const LCCKAPPKEY = @"057x24cfdzhffnl3dzk14jh9xo2rq6w1hy1fdzt5tv
              [LCCKUtil showNotificationWithTitle:title
                                         subtitle:subTitle
                                             type:LCCKMessageNotificationTypeError];
-         }
-         else if (error.code == 4304) {
-             title = @"群已满";
+         } else if (error.code == 4304) {
+             [conversationController.navigationController popToRootViewControllerAnimated:YES];
+             title = @"群已满，普通群人数上限为500";
+             subTitle = @"暂态聊天室无人数限制";
              [LCCKUtil showNotificationWithTitle:title
                                         subtitle:subTitle
                                             type:LCCKMessageNotificationTypeError];
@@ -334,60 +385,51 @@ setLoadLatestMessagesHandler:^(LCCKConversationViewController *conversationContr
  *  强制重连
  */
 - (void)lcck_setupForceReconect {
-    
     [[LCChatKit sharedInstance] setForceReconnectSessionBlock:^(
                                                                 NSError *aError, BOOL granted,
                                                                 __kindof UIViewController *viewController,
                                                                 LCCKReconnectSessionCompletionHandler completionHandler) {
         BOOL isSingleSignOnOffline = (aError.code == 4111);
+        if (isSingleSignOnOffline) {
+            // 一旦出现单点登录被踢错误，必须退出到登录界面重新登录
+            // - 退回登录页面
+            [[self class] lcck_clearLocalClientInfo];
+            LCCKLoginViewController *loginViewController = [[LCCKLoginViewController alloc] init];
+            [loginViewController setClientIDHandler:^(NSString *clientID) {
+                [LCCKUtil showProgressText:@"open client ..." duration:10.0f];
+                [LCChatKitExample invokeThisMethodAfterLoginSuccessWithClientId:clientID
+                                                                        success:^{
+                                                                            [LCCKUtil hideProgress];
+                                                                            LCCKTabBarControllerConfig *tabBarControllerConfig =
+                                                                            [[LCCKTabBarControllerConfig alloc] init];
+                                                                            [UIApplication sharedApplication].keyWindow.rootViewController =
+                                                                            tabBarControllerConfig.tabBarController;
+                                                                        }
+                                                                         failed:^(NSError *error) {
+                                                                             [LCCKUtil hideProgress];
+                                                                             NSLog(@"%@", error);
+                                                                         }];
+            }];
+            [[self class] lcck_tryPresentViewControllerViewController:loginViewController];
+            //completionHandler用来提示重连成功的HUD，此处可以不用执行
+            !completionHandler ?: completionHandler(YES, nil);
+            return;
+        }
+        
         // - 用户允许重连请求，发起重连或强制登录
         if (granted == YES) {
             BOOL force = NO;
             NSString *title = @"正在重连聊天服务...";
-            if (isSingleSignOnOffline) {
-                force = YES;
-                title = @"正在强制登录...";
-            }
             [[self class] lcck_showMessage:title toView:viewController.view];
-            [[LCChatKit sharedInstance]         openWithClientId:[LCChatKit sharedInstance].clientId
-             force:force
-             callback:^(BOOL succeeded, NSError *error) {
-                 [[self class] lcck_hideHUDForView:viewController.view];
-                 !completionHandler ?: completionHandler(succeeded, error);
-             }];
+            [[LCChatKit sharedInstance] openWithClientId:[LCChatKit sharedInstance].clientId
+                                                   force:force
+                                                callback:^(BOOL succeeded, NSError *error) {
+                                                    [[self class] lcck_hideHUDForView:viewController.view];
+                                                    //completionHandler用来提示重连成功的HUD
+                                                    !completionHandler ?: completionHandler(succeeded, error);
+                                                }];
             return;
         }
-        
-        // 用户拒绝了重连请求
-        // - 退回登录页面
-        [[self class] lcck_clearLocalClientInfo];
-        LCCKLoginViewController *loginViewController = [[LCCKLoginViewController alloc] init];
-        [loginViewController setClientIDHandler:^(NSString *clientID) {
-            [LCCKUtil showProgressText:@"open client ..." duration:10.0f];
-            [LCChatKitExample invokeThisMethodAfterLoginSuccessWithClientId:clientID
-                                                                    success:^{
-                                                                        [LCCKUtil hideProgress];
-                                                                        LCCKTabBarControllerConfig *tabBarControllerConfig =
-                                                                        [[LCCKTabBarControllerConfig alloc] init];
-                                                                        [UIApplication sharedApplication].keyWindow.rootViewController =
-                                                                        tabBarControllerConfig.tabBarController;
-                                                                    }
-                                                                     failed:^(NSError *error) {
-                                                                         [LCCKUtil hideProgress];
-                                                                         NSLog(@"%@", error);
-                                                                     }];
-        }];
-        [[self class] lcck_tryPresentViewControllerViewController:loginViewController];
-        // - 显示返回信息
-        NSInteger code = 0;
-        NSString *errorReasonText = @"not granted";
-        NSDictionary *errorInfo = @{
-                                    @"code" : @(code),
-                                    NSLocalizedDescriptionKey : errorReasonText,
-                                    };
-        NSError *error =
-        [NSError errorWithDomain:NSStringFromClass([self class]) code:code userInfo:errorInfo];
-        !completionHandler ?: completionHandler(NO, error);
     }];
 }
 /**
@@ -448,6 +490,7 @@ setLoadLatestMessagesHandler:^(LCCKConversationViewController *conversationContr
  *  筛选消息的设置
  */
 - (void)lcck_setupFilterMessage {
+    //注意：在 `[RedpacketConfig lcck_setting]` 中已经设置过该 `setFilterMessagesBlock:` ，注意不要重复设置。
     //这里演示如何筛选新的消息记录，以及新接收到的消息，以群定向消息为例：
     [[LCChatKit sharedInstance] setFilterMessagesBlock:^(AVIMConversation *conversation,
                               NSArray<AVIMTypedMessage *> *messages,
@@ -483,6 +526,27 @@ setLoadLatestMessagesHandler:^(LCCKConversationViewController *conversationContr
      }];
 }
 
+- (void)lcck_setupSendMessageHook {
+    [[LCChatKit sharedInstance] setSendMessageHookBlock:^(LCCKConversationViewController *conversationController, __kindof AVIMTypedMessage *message, LCCKSendMessageHookCompletionHandler completionHandler) {
+        if ([message.clientId isEqualToString:@"Jerry"]) {
+            NSInteger code = 0;
+            NSString *errorReasonText = @"不允许Jerry发送消息";
+            NSDictionary *errorInfo = @{
+                                        @"code":@(code),
+                                        NSLocalizedDescriptionKey : errorReasonText,
+                                        };
+            NSError *error = [NSError errorWithDomain:NSStringFromClass([self class])
+                                                 code:code
+                                             userInfo:errorInfo];
+            
+            completionHandler(NO, error);
+            [conversationController sendLocalFeedbackTextMessge:errorReasonText];
+        } else {
+            completionHandler(YES, nil);
+        }
+    }];
+}
+
 /**
  *  设置收到ChatKit的通知处理
  */
@@ -504,6 +568,7 @@ setLoadLatestMessagesHandler:^(LCCKConversationViewController *conversationContr
 }
 
 #pragma mark - private
+
 - (void)lcck_exampleShowNotificationWithTitle:(NSString *)title
                                      subtitle:(NSString *)subtitle
                                          type:(LCCKMessageNotificationType)type {
@@ -523,7 +588,7 @@ setLoadLatestMessagesHandler:^(LCCKConversationViewController *conversationContr
     else if ([parentController isKindOfClass:[LCCKConversationViewController class]]) {
         LCCKConversationViewController *conversationViewController_ =
         [[LCCKConversationViewController alloc] initWithPeerId:user.clientId ?: userId];
-        [[self class] lcck_pushToViewController:conversationViewController_];
+        [[self class] lcck_pushToViewController:conversationViewController_ fromViewController:parentController];
         return;
     }
     [LCCKUtil showNotificationWithTitle:title
@@ -566,8 +631,7 @@ setLoadLatestMessagesHandler:^(LCCKConversationViewController *conversationContr
 + (void)lcck_exampleChangeGroupAvatarURLsForConversationId:(NSString *)conversationId
                                               shouldInsert:(BOOL)shouldInsert {
     [self lcck_showMessage:@"正在设置群头像"];
-    [[LCCKConversationService sharedInstance]
-     fecthConversationWithConversationId:conversationId
+    [[LCCKConversationService sharedInstance] fetchConversationWithConversationId:conversationId
      callback:^(AVIMConversation *conversation, NSError *error) {
          [conversation
           lcck_setObject:
@@ -580,7 +644,7 @@ setLoadLatestMessagesHandler:^(LCCKConversationViewController *conversationContr
               if (succeeded) {
                   [self lcck_showSuccess:@"设置群头像成功"];
                   if (shouldInsert) {
-                      [[LCChatKit sharedInstance]                   insertRecentConversation:conversation];
+                      [[LCChatKit sharedInstance] insertRecentConversation:conversation];
                   }
                   [[NSNotificationCenter defaultCenter]
                    postNotificationName:
@@ -628,9 +692,9 @@ setLoadLatestMessagesHandler:^(LCCKConversationViewController *conversationContr
     actionItemMore.backgroundColor = [UIColor colorWithRed:0.78f green:0.78f blue:0.8f alpha:1.0];
     UITableViewRowAction *actionItemDelete = [UITableViewRowAction
                                               rowActionWithStyle:UITableViewRowActionStyleDefault
-                                              title:LCCKLocalizedStrings(@"Delete")
+                                              title:@"删除"
                                               handler:^(UITableViewRowAction *action, NSIndexPath *indexPath) {
-                                                  [[LCChatKit sharedInstance]                                               deleteRecentConversationWithConversationId:conversation.conversationId];
+                                                  [[LCChatKit sharedInstance] deleteRecentConversationWithConversationId:conversation.conversationId];
                                               }];
     
     UITableViewRowAction *actionItemChangeGroupAvatar = [UITableViewRowAction
@@ -640,8 +704,7 @@ setLoadLatestMessagesHandler:^(LCCKConversationViewController *conversationContr
                                                              [[self class] lcck_exampleChangeGroupAvatarURLsForConversationId:conversation.conversationId
                                                               shouldInsert:NO];
                                                          }];
-    actionItemChangeGroupAvatar.backgroundColor =
-    [UIColor colorWithRed:251 / 255.f green:186 / 255.f blue:11 / 255.f alpha:1.0];
+    actionItemChangeGroupAvatar.backgroundColor = [UIColor colorWithRed:251 / 255.f green:186 / 255.f blue:11 / 255.f alpha:1.0];
     if (conversation.lcck_type == LCCKConversationTypeSingle) {
         return @[ actionItemDelete, actionItemMore ];
     }
@@ -657,7 +720,7 @@ typedef void (^UITableViewRowActionHandler)(UITableViewRowAction *action, NSInde
                             controller:(LCCKConversationListViewController *)controller {
     NSString *conversationId = conversation.conversationId;
     if (conversation.lcck_unreadCount > 0) {
-        if (*title == nil) {
+        if (title) {
             *title = @"标记为已读";
         }
         *handler = ^(UITableViewRowAction *action, NSIndexPath *indexPath) {
@@ -665,7 +728,7 @@ typedef void (^UITableViewRowActionHandler)(UITableViewRowAction *action, NSInde
             [[LCChatKit sharedInstance] updateUnreadCountToZeroWithConversationId:conversationId];
         };
     } else {
-        if (*title == nil) {
+        if (title) {
             *title = @"标记为未读";
         }
         *handler = ^(UITableViewRowAction *action, NSIndexPath *indexPath) {
@@ -676,17 +739,24 @@ typedef void (^UITableViewRowActionHandler)(UITableViewRowAction *action, NSInde
 }
 
 #pragma mark 页面跳转
-+ (void)lcck_pushToViewController:(UIViewController *)viewController {
-    UITabBarController *tabBarController = [self cyl_tabBarController];
-    UINavigationController *navigationController = tabBarController.selectedViewController;
-    [navigationController
+
++ (void)lcck_pushToViewController:(UIViewController *)toViewController fromViewController:(UIViewController *)fromViewController {
+    if (!fromViewController) {
+        UITabBarController *tabBarController = [self cyl_tabBarController];
+        UINavigationController *navigationController = tabBarController.selectedViewController;
+        fromViewController = navigationController;
+    }
+    [fromViewController
      cyl_popSelectTabBarChildViewControllerAtIndex:0
      completion:^(__kindof UIViewController
                   *selectedChildTabBarController) {
-         [selectedChildTabBarController.navigationController
-          pushViewController:viewController
-          animated:YES];
+         [selectedChildTabBarController.navigationController pushViewController:toViewController
+                                                                       animated:YES];
      }];
+}
+
++ (void)lcck_pushToViewController:(UIViewController *)viewController {
+    [self lcck_pushToViewController:viewController fromViewController:nil];
 }
 
 + (void)lcck_tryPresentViewControllerViewController:(UIViewController *)viewController {
@@ -697,6 +767,7 @@ typedef void (^UITableViewRowActionHandler)(UITableViewRowAction *action, NSInde
             rootViewController =
             [(UINavigationController *)rootViewController visibleViewController];
         }
+        [rootViewController dismissViewControllerAnimated:NO completion:nil];
         [rootViewController presentViewController:viewController animated:YES completion:nil];
     }
 }

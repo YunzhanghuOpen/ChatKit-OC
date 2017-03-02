@@ -2,7 +2,7 @@
 //  LCCKConstants.h
 //  LeanCloudChatKit-iOS
 //
-//  v0.7.15 Created by ElonChan (微信向我报BUG:chenyilong1010) on 16/2/19.
+//  v0.8.5 Created by ElonChan on 16/2/19.
 //  Copyright © 2016年 LeanCloud. All rights reserved.
 //  Common typdef and constants, and so on.
 
@@ -48,7 +48,7 @@ static NSString *const LCCKBadgeTextForNumberGreaterThanLimit = @"···";
 
 #ifndef LCCKLocalizedStrings
 #define LCCKLocalizedStrings(key) \
-    NSLocalizedStringFromTableInBundle(key, @"LCChatKitString", [NSBundle bundleWithPath:[[[NSBundle bundleForClass:[LCChatKit class]] resourcePath] stringByAppendingPathComponent:@"Other.bundle"]], nil)
+    NSLocalizedStringFromTableInBundle(key, @"LCChatKitString", [NSBundle lcck_bundleForName:@"Other" class:[self class]], nil)
 #endif
 
 
@@ -57,6 +57,13 @@ static NSString *const LCCKBadgeTextForNumberGreaterThanLimit = @"···";
 #else
 #   define LCCKLog(...)
 #endif
+
+#define XCODE_VERSION_GREATER_THAN_OR_EQUAL_TO_8    __has_include(<UserNotifications/UserNotifications.h>)
+#define SYSTEM_VERSION_EQUAL_TO(v)                  ([[[UIDevice currentDevice] systemVersion] compare:v options:NSNumericSearch] == NSOrderedSame)
+#define SYSTEM_VERSION_GREATER_THAN(v)              ([[[UIDevice currentDevice] systemVersion] compare:v options:NSNumericSearch] == NSOrderedDescending)
+#define SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(v)  ([[[UIDevice currentDevice] systemVersion] compare:v options:NSNumericSearch] != NSOrderedAscending)
+#define SYSTEM_VERSION_LESS_THAN(v)                 ([[[UIDevice currentDevice] systemVersion] compare:v options:NSNumericSearch] == NSOrderedAscending)
+#define SYSTEM_VERSION_LESS_THAN_OR_EQUAL_TO(v)     ([[[UIDevice currentDevice] systemVersion] compare:v options:NSNumericSearch] != NSOrderedDescending)
 
 #pragma mark - Notification Name
 ///=============================================================================
@@ -83,6 +90,11 @@ static NSString *const LCCKNotificationCustomTransientMessageReceived = @"LCCKNo
  *  消息到达对方了，通知聊天页面更改消息状态
  */
 static NSString *const LCCKNotificationMessageDelivered = @"LCCKNotificationMessageDelivered";
+
+/**
+ *  消息对方已读，通知聊天页面更改消息状态
+ */
+static NSString *const LCCKNotificationMessageRead = @"LCCKNotificationMessageRead";
 
 /**
  *  对话的元数据变化了，通知页面刷新
@@ -151,6 +163,7 @@ typedef NS_ENUM(NSUInteger, LCCKMessageSendState){
     LCCKMessageSendStateSent, /**< 消息发送成功 */
     LCCKMessageSendStateDelivered, /**< 消息对方已接收*/
     LCCKMessageSendStateFailed, /**< 消息发送失败 */
+    LCCKMessageSendStateRead  /**< 消息已读 */
 };
 
 /**
@@ -184,9 +197,10 @@ static NSInteger const kLCCKOnePageSize = 10;
 static NSString *const LCCK_CONVERSATION_TYPE = @"type";
 static NSString *const LCCKInstallationKeyChannels = @"channels";
 
-static NSString *const LCCKDidReceiveMessagesUserInfoConversationKey = @"conversation";
+static NSString *const LCCKMessageNotifacationUserInfoConversationKey = @"conversation";
 static NSString *const LCCKDidReceiveMessagesUserInfoMessagesKey = @"receivedMessages";
 static NSString *const LCCKDidReceiveCustomMessageUserInfoMessageKey = @"receivedCustomMessage";
+static NSString *const LCCKMessageNotifacationUserInfoMessageKey = @"message";
 
 #define LCCK_CURRENT_TIMESTAMP ([[NSDate date] timeIntervalSince1970] * 1000)
 #define LCCK_FUTURE_TIMESTAMP ([[NSDate distantFuture] timeIntervalSince1970] * 1000)
@@ -214,6 +228,7 @@ static NSString *const LCCKCustomMessageTypeTitleKey = @"typeTitle";
 static NSString *const LCCKCustomMessageSummaryKey = @"summary";
 
 static NSString *const LCCKCustomMessageIsCustomKey = @"isCustom";
+
 static NSString *const LCCKCustomMessageOnlyVisiableForPartClientIds = @"OnlyVisiableForPartClientIds";
 
 /*!
@@ -383,15 +398,15 @@ typedef NS_ENUM(NSInteger, LCCKBubbleMessageMenuSelectedType) {
     LCCKConversationTableWhereClause
 
 #define LCCKDeleteConversationTable                              \
-    @"DELETE FROM " LCCKConversationTableName                     \
+    @"DELETE FROM " LCCKConversationTableName                    \
 
 #define LCCKConversationTableIncreaseUnreadCountSQL              \
     @"UPDATE " LCCKConversationTableName         @" "            \
     @"SET " LCCKConversationTableKeyUnreadCount  @" = "          \
-            LCCKConversationTableKeyUnreadCount  @" + ?"        \
+            LCCKConversationTableKeyUnreadCount  @" + ?"         \
     LCCKConversationTableWhereClause
 
-#define LCCKConversationTableIncreaseOneUnreadCountSQL              \
+#define LCCKConversationTableIncreaseOneUnreadCountSQL           \
     @"UPDATE " LCCKConversationTableName         @" "            \
     @"SET " LCCKConversationTableKeyUnreadCount  @" = "          \
             LCCKConversationTableKeyUnreadCount  @" + 1 "        \
@@ -417,8 +432,8 @@ typedef NS_ENUM(NSInteger, LCCKBubbleMessageMenuSelectedType) {
 #define LCCKConversationTableSelectSQL                           \
     @"SELECT * FROM " LCCKConversationTableName                  \
 
-#define LCCKConversationTableSelectDraftSQL                           \
-    @"SELECT draft FROM " LCCKConversationTableName                  \
+#define LCCKConversationTableSelectDraftSQL                      \
+    @"SELECT draft FROM " LCCKConversationTableName              \
     LCCKConversationTableWhereClause
 
 #define LCCKConversationTableSelectOneSQL                        \
@@ -459,7 +474,7 @@ typedef NS_ENUM(NSInteger, LCCKBubbleMessageMenuSelectedType) {
 
 //SELECT * FROM failed_messages WHERE id IN ('%@')
 #define LCCKSelectMessagesByIDSQL                        \
-    @"SELECT * FROM " LCCKFaildMessageTable          \
+    @"SELECT * FROM " LCCKFaildMessageTable              \
     LCCKWhereKeyId
 
 #define LCCKInsertMessageSQL                             \
@@ -467,7 +482,7 @@ typedef NS_ENUM(NSInteger, LCCKBubbleMessageMenuSelectedType) {
         LCCKKeyId @","                                   \
         LCCKKeyConversationId @","                       \
         LCCKKeyMessage                                   \
-    @") values (?, ?, ?) "                              \
+    @") values (?, ?, ?) "                               \
 
 #define LCCKDeleteMessageSQL                             \
     @"DELETE FROM " LCCKFaildMessageTable @" "           \
