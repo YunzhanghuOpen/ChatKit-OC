@@ -73,7 +73,6 @@
          }
      }
     
-    
     [RedpacketViewControl presentRedpacketViewController:rptype fromeController:self.conversationViewController groupMemberCount:conversation.members.count withRedpacketReceiver:userInfo andSuccessBlock:^(RedpacketMessageModel *model) {
         model.redpacket.redpacketOrgName = @"LeacCloud红包";
         [self sendRedpacketMessage:model];
@@ -102,7 +101,7 @@
                 });
             }
         });
-    }];
+    } andGenerateRedpacketIDBlock:nil];
 }
 
 // 发送红包消息
