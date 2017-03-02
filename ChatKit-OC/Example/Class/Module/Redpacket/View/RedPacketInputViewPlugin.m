@@ -102,7 +102,7 @@
                 });
             }
         });
-    }];
+    } andGenerateRedpacketIDBlock:nil];
 }
 
 // 发送红包消息
